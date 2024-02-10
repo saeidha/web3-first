@@ -8,8 +8,39 @@ function App() {
   const [sendAmount, setSendAmount] = useState("");
   const [recipient, setRecipient] = useState("");
   useEffect(() => {
-    checkIfWalletIsConnected();
-  }, []);
+    if(provider && isWalletConnected) {
+      checkNetwork();
+    }
+  }, [provider])
+
+
+  const targetNetwork = {
+    blockExplorerUrls: ['https://explorer.berachain.com'],
+    chainName: 'Berachain', 
+    nativeCurrency: {
+       name: 'BERA',
+       symbol: 'BERA',  
+       decimals: 18
+    },
+    rpcUrls: ['https://artio.rpc.berachain.com'],
+    
+    chainId: '0x138d5' // 80085 in hex
+  } 
+
+  const checkNetwork = async () => {
+    if(provider) {
+      const network = await provider.getNetwork();
+      if(network.chainId !== targetNetwork.chainId) {
+        try {
+          await provider.send('wallet_switchEthereumChain', [{ chainId: targetNetwork.chainId }]);
+        } catch {
+          await provider.send('wallet_addEthereumChain', [
+            targetNetwork
+          ])
+        }
+      }
+    }
+  }
 
   const checkIfWalletIsConnected = async () => {
     try {
@@ -72,9 +103,14 @@ function App() {
   if (!isWalletConnected) {
     return (
       <div>
-        <button onClick={connectWallet}>Connect Wallet</button>
+        {isWalletConnected ? (
+          <button onClick={checkNetwork}>Switch Network</button>  
+        ) : (  
+          <button onClick={connectWallet}>Connect Wallet</button>
+        )}
+  
       </div>
-    );
+    )
   }
 
   return (
